@@ -1,6 +1,8 @@
 #Jorge Ahumada. Tropical Ecology Assessment and Monitoring Network. Conservation International
 # Code developed on 2010/07/02 - 2010/12/01
 require(TeachingDemos)
+require(reshape2)
+require(ggplot2)
 #script to process raw TEAM files and get them ready for analysis
 f.readin.fix.data<-function(){
 	require(lubridate)
@@ -826,7 +828,7 @@ calculateNumCameraTraps<-function(matrix){
   sum(!is.na(pres.abs))
 }
 
-calculateWPIDiagnostics <- function(site.names){
+calculateWPIDiagnostics <- function(site.name){
 # This function compares the observed occupancy with the fitted occupancy
 # coming from the WPI analytics system
 # It requires a vector with the names of the sites (site.names) and
@@ -839,11 +841,11 @@ calculateWPIDiagnostics <- function(site.names){
     diff.obs.mode=numeric(),
     diff.obs.median=numeric(),
     stringsAsFactors=F)     
-for(j in 1:length(site.names)){
-  path<-as.character(site.names[j])
+#for(j in 1:length(site.names)){
+  path<-as.character(site.name)
   dir.create(path)
   #Extract data for site j
-  s.data<-subset(x=data,Site.Name==site.names[j],drop=T)
+  s.data<-subset(x=data,Site.Name==site.name,drop=T)
   # take care of some things with the data
   s.data<-f.fix.data2(s.data)
   nyears<-length(year<-sort(as.numeric(unique(s.data$Sampling.Period))))
@@ -863,10 +865,13 @@ for(j in 1:length(site.names)){
   obs.cams.matrix<-extractNumCameraTraps(shmat)
   
   #Extract a site and species and graph the results
-  s.wpi<-subset(wpi,site_name==site.names[j],drop=T)
+  s.wpi<-subset(wpi,site_name==site.name,drop=T)
   #do it for one species
   
   s.sp.list<-unique(s.wpi$bin)
+
+indx <- which(s.sp.list %in% rownames(obs.occ.matrix))
+s.sp.list <- s.sp.list[indx] 
   
   
   for(i in 1:length(s.sp.list)){
@@ -900,16 +905,15 @@ for(j in 1:length(site.names)){
     #calculate mean distance between observed and fitted median
     mean.diff.obs.median <- mean(diff.obs.median, na.rm=T)
     #put everything together in a data frame
-    temp <- c(as.character(site.names[j]),s.sp.list[i], tot.dets,
+    temp <- c(as.character(site.name),s.sp.list[i], tot.dets,
               dets.per.year,
               obs.all.occ,
               mean.diff.obs.mode,
               mean.diff.obs.median)
     results[nrow(results)+1, ] <- temp                      
     
-    graph.psi(title=paste(s.sp.list[i],"_",site.names[j]),psi=sp,initial=obs.occ.matrix[s.sp.list[i],],fun=median,low=0.1,hi=0.9,path=path)
+    graph.psi(title=paste(s.sp.list[i],"_",site.name),psi=sp,initial=obs.occ.matrix[s.sp.list[i],],fun=median,low=0.1,hi=0.9,path=path)
     print(paste("Done with species ",s.sp.list[i]))
   }
-}
 results
 }
